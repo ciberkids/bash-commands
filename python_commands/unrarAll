@@ -27,7 +27,7 @@ def extract_file(file):
 def delete_files(file):
     print("Printing Regex")
     to_delete = re.sub(r'.part.*$', '', file).replace('./', '')
-    to_delete_regex = f".*({to_delete}){{1}}.*\.(rar|rev)"
+    to_delete_regex = f".*({to_delete}){{1}}.*\\.(rar|rev)"
     print(f"regex: {to_delete_regex}")
 
     files_to_delete = [f for f in os.listdir('.') if re.match(to_delete_regex, f)]
