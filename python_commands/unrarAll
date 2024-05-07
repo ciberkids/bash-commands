@@ -1,30 +1,79 @@
 #!/usr/bin/env python3
-
 import os
 import re
 import sh
+import shutil
 
-def test_file(file):
+import argparse
+import tempfile
+
+def run_command(cmd, debug):
+    if debug:
+        print("Running command:", " ".join(cmd))
+    return sh.Command(cmd[0])(*cmd[1:])
+
+
+def print_output(output, label):
+    print(f"----- BEGIN {label} OUTPUT -----")
+    print(output)
+    print(f"------ END {label} OUTPUT ------\n")
+
+
+def test_file(file, debug):
+    print("-----------------------")
     print(f"Testing file: '{file}'")
     try:
-        output = sh.unrar('t', '-c-', file)
-        print(output)
+        cmd = ['unrar', 't', '-c-', file]
+        output = run_command(cmd, debug)
+        print_output(output, "UNRAR TEST")
+
     except sh.ErrorReturnCode as e:
         print(f"Test and recover rar file: '{file}' failed")
         return False
     return True
 
-def extract_file(file):
+def extract_file(file, keep_tmpdir, debug):
+    
+    print("-----------------------")
     print(f"Extracting file: '{file}'")
     try:
-        output = sh.unrar('x', '-c-', file)
-        print(output)
+        # Create a unique temporary directory
+        tmpdirname = tempfile.mkdtemp()
+        if keep_tmpdir:
+            print(f"WARNING: Running with --keep-tmpdir. Temporary directory {tmpdirname} will not be deleted.")
+
+        try:
+            # Extract files into the temporary directory
+            output = sh.unrar('x', '-c-', file, tmpdirname)
+            
+            cmd = ['unrar', 'x', '-c-', file, tmpdirname]
+            output = run_command(cmd, debug)
+            
+            print_output(output, "UNRAR EXTRACTION")
+
+            # Check if the temporary directory is empty
+            if not os.listdir(tmpdirname):
+                print(f"No files were extracted from: '{file}'")
+                return False
+
+            # Move the extracted files to the current directory
+            for filename in os.listdir(tmpdirname):
+                shutil.move(os.path.join(tmpdirname, filename), filename)
+
+        finally:
+            # Always remove the temporary directory, unless --keep-tmpdir is set
+            if not keep_tmpdir:
+                shutil.rmtree(tmpdirname)
+
     except sh.ErrorReturnCode as e:
         print(f"Extraction of file: '{file}' failed")
         return False
+
     return True
 
-def delete_files(file):
+
+
+def delete_files(file, dry_run):
     print("Printing Regex")
     to_delete = re.sub(r'.part.*$', '', file).replace('./', '')
     to_delete_regex = f".*({to_delete}){{1}}.*\\.(rar|rev)"
@@ -34,7 +83,8 @@ def delete_files(file):
 
     for f_del in files_to_delete:
         print(f"deleting '{f_del}'")
-        os.remove(f_del)
+        if not dry_run:
+            os.remove(f_del)
 
 def find_files():
     files_dict = {}
@@ -47,7 +97,12 @@ def find_files():
                 files_dict[base_name] = (f, part_number)
     return [f[0] for f in files_dict.values()]
 
-def unrar_all():
+def unrar_all(dry_run, keep_tmpdir, debug):
+    if dry_run:
+        print("WARNING: Running in dry-run mode. No files will be deleted.")
+    if keep_tmpdir:
+        print("WARNING: Running with --keep-tmpdir. Temporary directories will not be deleted.")
+
     print("Unrar All file starting from number part[0].rar")
 
     files = find_files()
@@ -57,16 +112,23 @@ def unrar_all():
     for file in files:
         print(f"File to elaborate: '{file}'")
 
-        if not test_file(file):
+        if not test_file(file, debug):
             return 1
 
-        if extract_file(file):
-            delete_files(file)
+        if extract_file(file, keep_tmpdir, debug):
+            delete_files(file, dry_run)
         else:
             return 1
 
     return 0
 
 if __name__ == "__main__":
-    exit_code = unrar_all()
+    parser = argparse.ArgumentParser(description='Unrar and delete files.')
+    parser.add_argument('--dry-run', action='store_true', help='If set, no files will be deleted.')
+    parser.add_argument('--keep-tmpdir', action='store_true', help='If set, the temporary directory will not be deleted.')
+    parser.add_argument('--debug', action='store_true', help='If set, print the commands being run.')
+
+    args = parser.parse_args()
+
+    exit_code = unrar_all(args.dry_run, args.keep_tmpdir, args.debug)
     exit(exit_code)
