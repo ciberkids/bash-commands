@@ -44,9 +44,7 @@ def extract_file(file, keep_tmpdir, debug):
 
         try:
             # Extract files into the temporary directory
-            output = sh.unrar('x', '-c-', file, tmpdirname)
-            
-            cmd = ['unrar', 'x', '-c-', file, tmpdirname]
+            cmd = ['unrar', 'x', file, tmpdirname]
             output = run_command(cmd, debug)
             
             print_output(output, "UNRAR EXTRACTION")
