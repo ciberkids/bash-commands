@@ -23,7 +23,7 @@ def test_file(file, debug):
     print("-----------------------")
     print(f"Testing file: '{file}'")
     try:
-        cmd = ['unrar', 't', '-c-', file]
+        cmd = ['unrar', 't', file]
         output = run_command(cmd, debug)
         print_output(output, "UNRAR TEST")
 
