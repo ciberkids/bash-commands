@@ -4,8 +4,12 @@ Self made bash commands
 ### Install
 
 ```
-mkdir -p ${HOME}/usr/local/bin/
+dir=${HOME}/usr/local/bin/
+mkdir -p ${dir}
+cd ${dir}
+pushd .
 git clone git@github.com:ciberkids/bash-commands.git
+popd
 ```
 
 
