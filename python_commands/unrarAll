@@ -7,6 +7,17 @@ import shutil
 import argparse
 import tempfile
 
+
+def print_description():
+    print("""
+    This script is a utility for handling .rar and .rev files. It provides functionality to test, extract, and delete these files.
+    The script uses the argparse library to handle command-line arguments, which are used to set the flags for the unrar_all() function.
+    - The --dry-run flag: If set, no files will be deleted.
+    - The --keep-tmpdir flag: If set, the temporary directory will not be deleted.
+    - The --debug flag: If set, print the commands being run.
+    """)
+
+
 def run_command(cmd, debug):
     if debug:
         print("Running command:", " ".join(cmd))
@@ -28,7 +39,7 @@ def test_file(file, debug):
         print_output(output, "UNRAR TEST")
 
     except sh.ErrorReturnCode as e:
-        print(f"Test and recover rar file: '{file}' failed")
+        print(f"Test and recover rar file: '{file}' failed: {e}")
         return False
     return True
 
@@ -38,7 +49,7 @@ def extract_file(file, keep_tmpdir, debug):
     print(f"Extracting file: '{file}'")
     try:
         # Create a unique temporary directory
-        tmpdirname = tempfile.mkdtemp()
+        tmpdirname = tempfile.mkdtemp(dir="./")
         if keep_tmpdir:
             print(f"WARNING: Running with --keep-tmpdir. Temporary directory {tmpdirname} will not be deleted.")
 
@@ -64,7 +75,7 @@ def extract_file(file, keep_tmpdir, debug):
                 shutil.rmtree(tmpdirname)
 
     except sh.ErrorReturnCode as e:
-        print(f"Extraction of file: '{file}' failed")
+        print(f"Extraction of file: '{file}' failed: {e}")
         return False
 
     return True
@@ -122,11 +133,17 @@ def unrar_all(dry_run, keep_tmpdir, debug):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Unrar and delete files.')
+    
     parser.add_argument('--dry-run', action='store_true', help='If set, no files will be deleted.')
     parser.add_argument('--keep-tmpdir', action='store_true', help='If set, the temporary directory will not be deleted.')
     parser.add_argument('--debug', action='store_true', help='If set, print the commands being run.')
+    parser.add_argument('--describe', action='store_true', help='Print a description of the script and exit')
 
     args = parser.parse_args()
+    
+    if args.describe:
+      print_description()
+      exit(0)
 
     exit_code = unrar_all(args.dry_run, args.keep_tmpdir, args.debug)
     exit(exit_code)
