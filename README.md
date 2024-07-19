@@ -11,7 +11,7 @@ git clone git@github.com:ciberkids/bash-commands.git
 
 ### remember to add this to your bashrc
 
-```
+
 
 
 ```
