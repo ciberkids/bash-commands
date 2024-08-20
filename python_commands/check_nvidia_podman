@@ -1,0 +1,42 @@
+#!/bin/python
+import sh
+import telegram_send
+import socket
+
+hostname = socket.gethostname()
+
+
+def check_podman_command():
+    try:
+        # Run the podman command using sh library
+        output = sh.podman("run", "--rm", "--device", "nvidia.com/gpu=all",
+                            "--security-opt=label=disable", "ubuntu", "nvidia-smi", "-L")
+        if output.exit_code != 0:
+            print(f"Error running podman command: {output.stderr}")
+            return True  # Return true to trigger notification
+    except Exception as e:
+        print(f"Error running podman command: {e}")
+        return True  # Return true to trigger notification
+
+    return False  # Command ran successfully, no notification needed
+
+def notify_telegram():
+    try:
+        # Run the nvidia-ctk cdi generate command using sh library
+        #output = sh.nvidia_ctk("cdi", "generate", "--output=/etc/cdi/nvidia.yaml")
+        #if output.exit_code != 0:
+        #    print(f"Error running nvidia-ctk cdi generate command: {output.stderr}")
+      print("test")
+    except sh.ErrorReturnCode_1 as e:
+        print(f"Error running nvidia-ctk cdi generate command: {e}")
+
+    # Send a notification to Telegram
+    message = f"{hostname}: Podman command failed - Nvidia card not loaded"
+    try:
+        sh.telegram_send.bake(message)
+    except Exception as e:
+        print(f"Error sending Telegram notification: {e}")
+
+if __name__ == "__main__":
+    if check_podman_command():
+        notify_telegram()
