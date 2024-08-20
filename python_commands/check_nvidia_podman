@@ -35,8 +35,9 @@ def notify_telegram():
 
     # Send a notification to Telegram
     message = f"{hostname}: Podman command failed - Nvidia card not loaded"
+    print(message)
     try:
-        sh.telegram_send.bake(message)
+        sh.telegram_send(message)
     except Exception as e:
         print(f"Error sending Telegram notification: {e}")
 
