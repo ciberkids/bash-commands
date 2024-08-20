@@ -12,14 +12,16 @@ def check_podman_command():
         output = sh.podman("run", "--rm", "--device", "nvidia.com/gpu=all",
                             "--security-opt=label=disable", "ubuntu", "nvidia-smi", "-L")
         print(output)
-        if output.exit_code != 0:
-            print(f"Error running podman command: {output.stderr}")
-            return True  # Return true to trigger notification
+
+        if "UUID" not in output"          
+        #if output.exit_code != 0:
+            print(f"Error running podman command: {output}")
+            return False  # Return true to trigger notification
     except Exception as e:
         print(f"Error running podman command: {e}")
-        return True  # Return true to trigger notification
+        return False  # Return true to trigger notification
 
-    return False  # Command ran successfully, no notification needed
+    return True  # Command ran successfully, no notification needed
 
 def notify_telegram():
     try:
@@ -39,5 +41,5 @@ def notify_telegram():
         print(f"Error sending Telegram notification: {e}")
 
 if __name__ == "__main__":
-    if check_podman_command():
+    if not check_podman_command():
         notify_telegram()
