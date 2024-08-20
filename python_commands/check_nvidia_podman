@@ -11,6 +11,7 @@ def check_podman_command():
         # Run the podman command using sh library
         output = sh.podman("run", "--rm", "--device", "nvidia.com/gpu=all",
                             "--security-opt=label=disable", "ubuntu", "nvidia-smi", "-L")
+        print(output)
         if output.exit_code != 0:
             print(f"Error running podman command: {output.stderr}")
             return True  # Return true to trigger notification
