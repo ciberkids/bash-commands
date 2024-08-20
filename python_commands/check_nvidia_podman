@@ -13,7 +13,7 @@ def check_podman_command():
                             "--security-opt=label=disable", "ubuntu", "nvidia-smi", "-L")
         print(output)
 
-        if "UUID" not in output"          
+        if "UUID" not in output:         
         #if output.exit_code != 0:
             print(f"Error running podman command: {output}")
             return False  # Return true to trigger notification
