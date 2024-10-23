@@ -1,0 +1,77 @@
+#!/usr/bin/env python
+
+import sh
+import socket
+
+#hostname = socket.gethostname()
+
+
+def check_podman_command():
+    output_string = ""
+    return_value = True
+    try:
+        # Run the podman command using sh library
+        output = sh.podman("run", "--rm", "--device", "nvidia.com/gpu=all",
+                            "--security-opt=label=disable", "ubuntu", "nvidia-smi", "-L")
+        output_string = output 
+        #print(output)
+        
+        if "UUID" not in output:         
+        #if output.exit_code != 0:
+            output_string = "Error running podman command: {out}".format(out = output)
+            print(output_string)
+            return_value = False  # Return true to trigger notification
+    except Exception as e:
+        output_string = "Error running podman command: {err}".format(err = e)
+        print(output_string)
+        return_value = False  # Return true to trigger notification
+
+    return return_value, output_string  # Command ran successfully, no notification needed
+
+def try_toFix():
+    try:
+        message = ""
+        # Run the nvidia-ctk cdi generate command using sh library
+        output = sh.nvidia_ctk("cdi", "generate", "--output=/etc/cdi/nvidia.yaml")
+
+        print("asdasdasdasdsada")
+        dir(output)
+        #if output.exit_code != 0:
+        #    print(f"Error running nvidia-ctk cdi generate command(0): {output.stderr}")
+        #    message = "Error while trying to generate nvidia.yaml"
+        #print("test")
+    except Exception as e:
+        print ("ERRORRRRRRR")
+        print(f"Error running nvidia-ctk cdi generate command (1): {e.stderr}")
+        message += "{err}".format(err=e)
+
+    # Send a notification to Telegram
+    print(message)
+    return message
+
+def notify_telegram(message):
+    #telegram_send = sh.telegram_send.bake("--config", "/root/.config/telegram-send.conf")
+    
+    try:
+        print(f"sending message: {message}")
+       # telegram_send.send(messages=[message],conf="/root/.config/telegram-send.conf")
+        sh.Command("/root/python_virtual_envs/nvidia-checks/venv/bin/telegram-send")("--config", "/root/.config/telegram-send.conf", message)
+    except sh.ErrorReturnCode_1 as e:
+        print(f"Error sending Telegram message---->: {e}")
+    except Exception as e:
+        print(f"Error sending Telegram notification: {e}")
+
+if __name__ == "__main__":
+    success, outstring = check_podman_command()
+    print(f"Check podman: {success}")
+    print(f"output: {outstring}")
+    #if success:
+    #    notify_telegram(outstring)
+    if not success: #not
+        hostname = socket.gethostname()
+        message = "{hostN}: Nvidia card not loaded in podman".format(hostN=hostname)
+        notify_telegram(message)
+        tryToFix = try_toFix()
+        success, output = check_podman_command()
+        message += " - fixed: {fixed} - fixed successful: {fix_successful}".format(fixed=tryToFix, fix_successful=success)
+        notify_telegram(message)
