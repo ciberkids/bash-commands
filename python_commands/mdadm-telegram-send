@@ -3,37 +3,52 @@ import sh
 import sys
 import socket
 
-# Get command-line arguments (event, md_device, device)
 
-event = "" if len(sys.argv) < 2 else sys.argv[1]
-md_device = "" if len(sys.argv) < 3 else sys.argv[2]
-device = "" if len(sys.argv) < 4 else sys.argv[3]
 
-# Get the hostname of the machine
-hostname = socket.gethostname()
+def get_message(event, md_device, device):
+  # Get the hostname of the machine
+  hostname = socket.gethostname()
+  
+  rebuilt_percentage = 0  
 
-# Based on the event, construct our notify message
-case_mapping = {
-    "DegradedArray": lambda: f"{hostname}: {md_device} is running in DEGRADED MODE",
-    "DeviceDisappeared": lambda: f"{hostname}: {md_device} has DISAPPEARED",
-    "Fail": lambda: f"{hostname}: {md_device} had an ACTIVE component FAIL ({device})",
-    "FailSpare": lambda: f"{hostname}: {md_device} had a SPARE component FAIL during rebuild ({device})",
-    "MoveSpare": lambda: f"{hostname}: SPARE device {device} has been MOVED to a new array on {hostname}",
-    "NewArray": lambda: f"{hostname}: {md_device} has APPEARED",
-    "Rebuild??": lambda x: f"{hostname}: {md_device} REBUILD is now {x}% complete",
-    "RebuildFinished": lambda: f"{hostname}: REBUILD of {md_device} on {hostname} is COMPLETE or ABORTED",
-    "RebuildStarted": lambda: f"{hostname}: RECONSTRUCTION of {md_device} on {hostname} has STARTED",
-    "SpareActive": lambda: f"{hostname}: {device} has become an ACTIVE COMPONENT of {md_device} on {hostname}",
-    "SparesMissing": lambda: f"{hostname}: {md_device} is MISSING one or more SPARE devices on {hostname}",
-    "TestMessage": lambda: f"{hostname}: TEST MESSAGE generated for {md_device} on {hostname}",
-}
+  if event.startswith("Rebuild"):
+    rebuild_percentage = event[7:]
+    event = "Rebuild"
 
-msg = case_mapping.get(event, lambda: f"{hostname}: Unknown event: {event}")()
+  # Based on the event, construct our notify message
+  case_mapping = {
+      "DegradedArray": lambda: f"{hostname}: {md_device} is running in DEGRADED MODE",
+      "DeviceDisappeared": lambda: f"{hostname}: {md_device} has DISAPPEARED",
+      "Fail": lambda: f"{hostname}: {md_device} had an ACTIVE component FAIL ({device})",
+      "FailSpare": lambda: f"{hostname}: {md_device} had a SPARE component FAIL during rebuild ({device})",
+      "MoveSpare": lambda: f"{hostname}: SPARE device {device} has been MOVED to a new array on {hostname}",
+      "NewArray": lambda: f"{hostname}: {md_device} has APPEARED",
+      "Rebuild": lambda: f"{hostname}: {md_device} REBUILD is now {rebuild_percentage}% complete",
+      "RebuildFinished": lambda: f"{hostname}: REBUILD of {md_device} on {hostname} is COMPLETE or ABORTED",
+      "RebuildStarted": lambda: f"{hostname}: RECONSTRUCTION of {md_device} - {device} on {hostname} has STARTED",
+      "SpareActive": lambda: f"{hostname}: {device} has become an ACTIVE COMPONENT of {md_device} on {hostname}",
+      "SparesMissing": lambda: f"{hostname}: {md_device} is MISSING one or more SPARE devices on {hostname}",
+      "TestMessage": lambda: f"{hostname}: TEST MESSAGE generated for {md_device} - {device} on {hostname}",
+  }
+  
+  msg = case_mapping.get(event, lambda: f"{hostname}: Unknown event: {event} {md_device}")()
+  return msg
 
-# Now that we have our message, send it to the sys admin.
-# (in this example, we send it as an SMS to a Verizon phone)
-telegram_send = sh.telegram_send.bake(msg)
-try:
-    telegram_send()
-except sh.ErrorReturnCode_1 as e:
-    print(f"Error sending Telegram message: {e}")
+if __name__ == "__main__":
+
+  # Get command-line arguments (event, md_device, device)
+
+  event = "" if len(sys.argv) < 2 else sys.argv[1]
+  md_device = "" if len(sys.argv) < 3 else sys.argv[2]
+  device = "" if len(sys.argv) < 4 else sys.argv[3]
+  
+  msg = get_message(event, md_device, device)
+  
+  # Now that we have our message, send it to the sys admin.
+  # (in this example, we send it as an SMS to a Verizon phone)
+  telegram_send = sh.telegram_send.bake(msg)
+
+  try:
+      telegram_send()
+  except sh.ErrorReturnCode_1 as e:
+      print(f"Error sending Telegram message: {e}")

@@ -1,0 +1,22 @@
+#!/usr/bin/env python3
+import sh
+import socket
+
+# Get the hostname of the machine
+hostname = socket.gethostname()
+
+
+def send_message(msg):
+    telegram_send = sh.telegram_send.bake(msg)
+    try:
+        telegram_send()
+    except sh.ErrorReturnCode_1 as e:
+        print(f"Error sending Telegram message: {e}")
+
+def main():
+    # Execute `cat /proc/mdstat`
+    mdstat_output = sh.cat('/proc/mdstat')
+    send_message(f"{hostname}\n{mdstat_output}")
+
+if __name__ == "__main__":
+    main()
